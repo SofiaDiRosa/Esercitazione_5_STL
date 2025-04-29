@@ -7,6 +7,59 @@ using namespace std;
 using namespace Eigen;
 using namespace PolygonalLibrary;
 
+bool TestEdges(const PolygonalMesh& mesh)
+{
+	const double epsilon = 1e-10;
+	
+	for(unsigned int cell_id = 0; cell_id < mesh.NumCell1Ds; cell_id++)
+	{
+		unsigned int origin_id = mesh.Cell1DsExtrems(0, cell_id);
+		unsigned int end_id = mesh.Cell1DsExtrems(1, cell_id);
+		
+		Vector3d origin = mesh.Cell0DsCoordinates.col(origin_id);
+		Vector3d end = mesh.Cell0DsCoordinates.col(end_id);
+		
+		double length = (end - origin).norm();
+		if(length < epsilon)
+		{
+			cerr << "ERRORE: il segmento " << cell_id << " ha lunghezza nulla" << endl;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool TestArea(const PolygonalMesh& mesh)
+{
+	const double epsilon = 1e-10;
+	
+	for(unsigned int cell_id = 0; cell_id < mesh.NumCell2Ds; cell_id ++)
+	{
+		const auto& vertices = mesh.Cell2DsVertices[cell_id];
+		if(vertices.size() < 3)
+			continue;
+		
+		// calcolo dell'area
+		double area = 0.0;
+		int n = vertices.size();
+		for(int i = 0; i < n; i++)
+		{
+			unsigned int k = (i+1) % n;
+			const auto& v1 = mesh.Cell0DsCoordinates.col(vertices[i]);
+			const auto& v2 = mesh.Cell0DsCoordinates.col(vertices[k]);
+			area += v1.x() * v2.y() - v1.y() * v2.x();
+		}
+		return abs(area) / 2.0;
+		
+		if(area < epsilon)
+		{
+			cerr << "ERRORE: il poligono con indice " << cell_id << " ha area nulla" << endl;
+			return false;
+		}
+	}
+	return true;
+}
+
 int main()
 {
 	PolygonalMesh mesh;
